@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	glSystray "github.com/getlantern/systray"
+	"github.com/getlantern/systray/example/icon"
 	"github.com/xilp/systray"
 	"golang.design/x/clipboard"
 	"os/exec"
@@ -10,8 +12,10 @@ import (
 	"strings"
 )
 
+var addresses []string
+
 func main() {
-	addresses := getAddressesRegex()
+	addresses = getAddressesRegex()
 	allAddressesHint := strings.Join(addresses, "\n")
 	address := addresses[0]
 	numbers := strings.Split(address, ".")
@@ -31,9 +35,37 @@ func main() {
 		}
 	}
 
-	if err = tray.Run(); err != nil {
-		println(err.Error())
+	go func() {
+		if err = tray.Run(); err != nil {
+			println(err.Error())
+		}
+	}()
+	glSystray.Run(glOnReady, func() {})
+
+}
+
+func glOnReady() {
+	glSystray.SetIcon(icon.Data)
+	glSystray.SetTitle("Refresh Address")
+	glSystray.SetTooltip("Do refreshing")
+	refreshBtn := glSystray.AddMenuItem("Refresh", "Reload to refresh IPs")
+	go func() {
+		for {
+			<-refreshBtn.ClickedCh
+			println("Refresh clicked")
+		}
+	}()
+	for _, address := range addresses {
+		btn := glSystray.AddMenuItem(fmt.Sprintf("Change to %s", address), "")
+		go func(button *glSystray.MenuItem, address string) {
+			for {
+				<-button.ClickedCh
+				fmt.Printf("swtiching to %s\n", address)
+			}
+
+		}(btn, address)
 	}
+
 }
 
 func getAddressesRegex() []string {
@@ -44,14 +76,14 @@ func getAddressesRegex() []string {
 	}
 	re := regexp.MustCompile(`Address[\s.]+:\s(?P<address>\d{1,3}.\d{1,3}\.\d{1,3}\.\d{1,3})`)
 	ipMatches := re.FindAllStringSubmatch(string(output), -1)
-	addresses := make([]string, 0)
+	foundAddresses := make([]string, 0)
 	for _, match := range ipMatches {
 		if len(match) > 0 {
 			index := re.SubexpIndex("address")
 			newAddress := match[index]
-			addresses = append(addresses, newAddress)
+			foundAddresses = append(foundAddresses, newAddress)
 			fmt.Printf("Address:%s\n", match[index])
 		}
 	}
-	return addresses
+	return foundAddresses
 }
