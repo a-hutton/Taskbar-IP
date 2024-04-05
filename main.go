@@ -82,16 +82,22 @@ func createControlIcon() {
 	glSystray.SetTitle("Refresh Address")
 	glSystray.SetTooltip("Do refreshing")
 	refreshBtn := glSystray.AddMenuItem("Refresh", "Reload to refresh IPs")
+	quitBtn := glSystray.AddMenuItem("Quit", "Quit application and remove from taskbar")
 	addIpIcons()
 	go func() {
 		for {
-			<-refreshBtn.ClickedCh
-			println("Refresh clicked")
-			Addresses = getAddressesRegex()
-			removeIpIcons()
-			removeControlIpsList()
-			addIpIcons()
-			createIpTrayIcons(Addresses, -1)
+			select {
+			case <-refreshBtn.ClickedCh:
+				println("Refresh clicked")
+				Addresses = getAddressesRegex()
+				removeIpIcons()
+				removeControlIpsList()
+				addIpIcons()
+				createIpTrayIcons(Addresses, -1)
+			case <-quitBtn.ClickedCh:
+				glSystray.Quit()
+			}
+
 		}
 	}()
 
