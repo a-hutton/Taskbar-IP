@@ -24,14 +24,25 @@ func main() {
 	}
 	glSystray.Run(func() {
 		createControlIcon()
-		createIpTrayIcons(Addresses, 0)
+		createIpTrayIcons(Addresses, -1)
 	}, func() {
 		println("On Exit")
 	})
 
 }
 
+// createIpTrayIcons displays one of the user's current IP addresses, specified by index.
+// if index is negative, it will use the user's preference, or 0 if it isn't connected
 func createIpTrayIcons(addresses []string, index int) {
+	if index < 0 {
+		config := ReadConfig()
+		if slices.Contains(Addresses, config.PreferredIp) {
+			index = slices.Index(Addresses, config.PreferredIp)
+		} else {
+			index = 0
+		}
+	}
+
 	allAddressesHint := strings.Join(addresses, "\n")
 	address := addresses[index]
 	numbers := strings.Split(address, ".")
@@ -80,7 +91,7 @@ func createControlIcon() {
 			removeIpIcons()
 			removeControlIpsList()
 			addIpIcons()
-			createIpTrayIcons(Addresses, 0)
+			createIpTrayIcons(Addresses, -1)
 		}
 	}()
 
@@ -89,17 +100,20 @@ func createControlIcon() {
 func addIpIcons() {
 	ipMenuItems = make([]*glSystray.MenuItem, 0)
 	for i, address := range Addresses {
-		btn := glSystray.AddMenuItem(fmt.Sprintf("Change to %s", address), "")
-		ipMenuItems = append(ipMenuItems, btn)
+		addressButton := glSystray.AddMenuItem(address, fmt.Sprintf("Options for %s", address))
+		ipMenuItems = append(ipMenuItems, addressButton)
 		go func(button *glSystray.MenuItem, index int) {
 			for {
 				<-button.ClickedCh
-				fmt.Printf("swtiching to %d\n", index)
+				fmt.Printf("swtiching to %d and saving it as default\n", index)
+				config := ReadConfig()
+				config.PreferredIp = Addresses[index]
+				config.Save()
 				removeIpIcons()
 				createIpTrayIcons(Addresses, index)
 			}
 
-		}(btn, i)
+		}(addressButton, i)
 	}
 }
 
