@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	glSystray "github.com/getlantern/systray"
-	"github.com/getlantern/systray/example/icon"
 	"github.com/xilp/systray"
 	"golang.design/x/clipboard"
+	"ipIcons/icons"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -78,7 +78,7 @@ func removeIpIcons() {
 }
 
 func createControlIcon() {
-	glSystray.SetIcon(icon.Data)
+	glSystray.SetIcon(icons.More)
 	glSystray.SetTitle("Refresh Address")
 	glSystray.SetTooltip("Do refreshing")
 	refreshBtn := glSystray.AddMenuItem("Refresh", "Reload to refresh IPs")
